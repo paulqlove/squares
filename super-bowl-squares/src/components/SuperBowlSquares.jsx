@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Shuffle, DollarSign } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Shuffle, DollarSign, Share2 } from 'lucide-react';
+import { database } from '../firebase';
+import { ref, onValue, set, update } from 'firebase/database';
 
 const SuperBowlSquares = () => {
   const [homeTeam, setHomeTeam] = useState('Home Team');
@@ -17,12 +19,45 @@ const SuperBowlSquares = () => {
     q4: { home: '', away: '' }
   });
 
+  const [gameId, setGameId] = useState(() => {
+  const pathParts = window.location.pathname.split('/');
+  return pathParts[pathParts.length - 1] || 'default-game';
+});
+
+// Firebase real-time sync
+  useEffect(() => {
+    const gameRef = ref(database, `games/${gameId}`);
+    
+    const unsubscribe = onValue(gameRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setSelectedSquares(data.squares || {});
+        setHomeNumbers(data.homeNumbers || Array(10).fill(null));
+        setAwayNumbers(data.awayNumbers || Array(10).fill(null));
+        setIsRandomized(data.isRandomized || false);
+        setHomeTeam(data.homeTeam || 'Home Team');
+        setAwayTeam(data.awayTeam || 'Away Team');
+        setPricePerSquare(data.pricePerSquare || 5);
+        setScores(data.scores || {
+          q1: { home: '', away: '' },
+          q2: { home: '', away: '' },
+          q3: { home: '', away: '' },
+          q4: { home: '', away: '' }
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [gameId]);
+
+
   const payoutPercentages = {
     q1: 0.20,
     q2: 0.20,
     q3: 0.20,
     q4: 0.40
   };
+
 
   const playerColors = useMemo(() => {
     const colorPalette = [
@@ -46,7 +81,39 @@ const SuperBowlSquares = () => {
     return playerColorMap;
   }, [selectedSquares]);
 
-  const shuffleNumbers = () => {
+  // Change handleSquareClick
+const handleSquareClick = async (row, col) => {
+  if (!playerName) {
+    alert('Please enter your name before selecting squares');
+    return;
+  }
+  
+  const squareKey = `${row}-${col}`;
+  if (selectedSquares[squareKey]) {
+    if (selectedSquares[squareKey] !== playerName) {
+      alert('This square has already been selected by another player');
+      return;
+    }
+    const newSquares = { ...selectedSquares };
+    delete newSquares[squareKey];
+    await set(ref(database, `games/${gameId}/squares`), newSquares);
+  } else {
+    await update(ref(database, `games/${gameId}/squares`), {
+      [squareKey]: playerName
+    });
+  }
+};
+
+
+
+// Change handleScoreChange
+const handleScoreChange = async (quarter, team, value) => {
+  await update(ref(database, `games/${gameId}/scores/${quarter}`), {
+    [team]: value
+  });
+};
+
+    const shuffleNumbers = async () => {
     const totalSquares = Object.keys(selectedSquares).length;
     const emptySquares = 100 - totalSquares;
     
@@ -69,43 +136,65 @@ const SuperBowlSquares = () => {
       return newArray;
     };
     
-    setHomeNumbers(shuffleArray([...numbers]));
-    setAwayNumbers(shuffleArray([...numbers]));
-    setIsRandomized(true);
-  };
-
-  const handleSquareClick = (row, col) => {
-    if (!playerName) {
-      alert('Please enter your name before selecting squares');
-      return;
-    }
+    const homeNums = shuffleArray([...numbers]);
+    const awayNums = shuffleArray([...numbers]);
     
-    const squareKey = `${row}-${col}`;
-    if (selectedSquares[squareKey]) {
-      if (selectedSquares[squareKey] !== playerName) {
-        alert('This square has already been selected by another player');
-        return;
-      }
-      const newSquares = { ...selectedSquares };
-      delete newSquares[squareKey];
-      setSelectedSquares(newSquares);
-    } else {
-      setSelectedSquares({
-        ...selectedSquares,
-        [squareKey]: playerName
-      });
-    }
+    await update(ref(database, `games/${gameId}`), {
+      homeNumbers: homeNums,
+      awayNumbers: awayNums,
+      isRandomized: true
+    });
   };
 
-  const handleScoreChange = (quarter, team, value) => {
-    setScores(prev => ({
-      ...prev,
-      [quarter]: {
-        ...prev[quarter],
-        [team]: value
-      }
-    }));
-  };
+
+  
+  const createNewGame = async () => {
+  const newGameId = Math.random().toString(36).substr(2, 9);
+  await set(ref(database, `games/${newGameId}`), {
+    createdAt: Date.now(),
+    homeTeam: 'Home Team',
+    awayTeam: 'Away Team',
+    pricePerSquare: 5,
+    squares: {},
+    homeNumbers: Array(10).fill(null),
+    awayNumbers: Array(10).fill(null),
+    isRandomized: false,
+    scores: {
+      q1: { home: '', away: '' },
+      q2: { home: '', away: '' },
+      q3: { home: '', away: '' },
+      q4: { home: '', away: '' }
+    }
+  });
+  
+  window.history.pushState({}, '', `/${newGameId}`);
+  setGameId(newGameId);
+  return newGameId;
+};
+
+const ShareGame = () => (
+  <div className="mb-6 flex flex-col items-center gap-4">
+    <button
+      onClick={createNewGame}
+      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
+    >
+      <Share2 size={16} />
+      Create New Shareable Game
+    </button>
+    {gameId !== 'default-game' && (
+      <div className="w-full max-w-xl">
+        <p className="text-sm text-gray-600 mb-1">Share this link with others:</p>
+        <input
+          type="text"
+          readOnly
+          value={`${window.location.origin}/${gameId}`}
+          className="border p-2 rounded w-full bg-gray-50"
+          onClick={e => e.target.select()}
+        />
+      </div>
+    )}
+  </div>
+);
 
   const winners = useMemo(() => {
     const getWinner = (homeScore, awayScore) => {
@@ -190,7 +279,7 @@ const SuperBowlSquares = () => {
   return (
     <div className="max-w-6xl mx-auto p-4">
       <h2 className="text-2xl font-bold mb-4 text-center">Super Bowl Squares</h2>
-      
+       <ShareGame />
       <div className="mb-6 flex flex-col items-center gap-4">
         <div className="flex gap-4">
           <input
