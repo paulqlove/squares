@@ -277,36 +277,36 @@ const ShareGame = () => (
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
+    <div className="max-w-6xl mx-auto p-4 overflow-x-auto">
       <h2 className="text-2xl font-bold mb-4 text-center">Super Bowl Squares</h2>
-       <ShareGame />
+      
       <div className="mb-6 flex flex-col items-center gap-4">
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-2xl">
           <input
             type="text"
             value={homeTeam}
             onChange={(e) => setHomeTeam(e.target.value)}
-            className="border p-2 rounded"
+            className="border p-2 rounded flex-1"
             placeholder="Home Team"
           />
           <input
             type="text"
             value={awayTeam}
             onChange={(e) => setAwayTeam(e.target.value)}
-            className="border p-2 rounded"
+            className="border p-2 rounded flex-1"
             placeholder="Away Team"
           />
         </div>
         
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-col sm:flex-row gap-4 items-center w-full max-w-2xl">
           <input
             type="text"
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
-            className="border p-2 rounded"
+            className="border p-2 rounded w-full sm:w-auto"
             placeholder="Enter your name"
           />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <DollarSign size={16} />
             <input
               type="number"
@@ -316,12 +316,12 @@ const ShareGame = () => (
               min="1"
               placeholder="Price"
             />
-            <span className="text-sm text-gray-600">per square</span>
+            <span className="text-sm text-gray-600 whitespace-nowrap">per square</span>
           </div>
           <button 
             onClick={shuffleNumbers}
             disabled={isRandomized}
-            className={`flex items-center gap-2 px-4 py-2 rounded text-white
+            className={`flex items-center justify-center gap-2 px-4 py-2 rounded text-white w-full sm:w-auto
               ${isRandomized 
                 ? 'bg-gray-400 cursor-not-allowed' 
                 : 'bg-blue-500 hover:bg-blue-600'}`}
@@ -332,13 +332,13 @@ const ShareGame = () => (
         </div>
       </div>
       
-      <div className="flex gap-8">
+      <div className="flex flex-col lg:flex-row gap-8">
         <div className="relative">
           <div className="pt-8 pl-8">
             <div className="flex">
-              <div className="w-12 h-12"></div>
+              <div className="w-8 h-8 sm:w-12 sm:h-12"></div>
               {homeNumbers.map((num, index) => (
-                <div key={`top-${index}`} className="w-12 h-12 border border-gray-300 flex items-center justify-center bg-gray-100">
+                <div key={`top-${index}`} className="w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 flex items-center justify-center bg-gray-100 text-sm sm:text-base">
                   {num !== null ? num : ''}
                 </div>
               ))}
@@ -346,7 +346,7 @@ const ShareGame = () => (
             
             {Array(10).fill(null).map((_, rowIdx) => (
               <div key={`row-${rowIdx}`} className="flex">
-                <div className="w-12 h-12 border border-gray-300 flex items-center justify-center bg-gray-100">
+                <div className="w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 flex items-center justify-center bg-gray-100 text-sm sm:text-base">
                   {awayNumbers[rowIdx] !== null ? awayNumbers[rowIdx] : ''}
                 </div>
                 
@@ -357,7 +357,7 @@ const ShareGame = () => (
                   return (
                     <div
                       key={`${rowIdx}-${colIdx}`}
-                      className={`w-12 h-12 border border-gray-300 flex items-center justify-center cursor-pointer text-xs p-1 text-center
+                      className={`w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 flex items-center justify-center cursor-pointer text-[8px] sm:text-xs p-1 text-center
                         ${playerColor || 'hover:bg-blue-50'}`}
                       onClick={() => handleSquareClick(rowIdx, colIdx)}
                     >
