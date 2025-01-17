@@ -27,7 +27,7 @@ const SuperBowlSquares = () => {
 
 // Firebase real-time sync
   useEffect(() => {
-  const gameRef = ref(database, `games/${gameId}`);
+  const gameRef = ref(database, `games/default-game`);
 
   const unsubscribe = onValue(gameRef, (snapshot) => {
     const data = snapshot.val();
@@ -38,7 +38,10 @@ const SuperBowlSquares = () => {
       setIsRandomized(data.isRandomized || false);
       setHomeTeam(data.homeTeam || 'Home Team');
       setAwayTeam(data.awayTeam || 'Away Team');
-      setPricePerSquare(data.pricePerSquare || 5);
+      // setPricePerSquare(data.pricePerSquare || 5);
+       if (data.pricePerSquare !== undefined && data.pricePerSquare !== pricePerSquare) {
+        setPricePerSquare(data.pricePerSquare);
+      }
       setScores({
         q1: { home: '', away: '' },
         q2: { home: '', away: '' },
@@ -50,7 +53,7 @@ const SuperBowlSquares = () => {
   });
 
   return () => unsubscribe();
-}, [gameId]);
+}, [gameId,pricePerSquare]);
 
 
 
@@ -83,6 +86,16 @@ const SuperBowlSquares = () => {
     
     return playerColorMap;
   }, [selectedSquares]);
+
+  //change handlePriceChange
+  const handlePriceChange = (value) => {
+  setPricePerSquare(Number(value));
+  
+  //  update the price in Firebase
+  update(ref(database, `games/${gameId}`), {
+    pricePerSquare: Number(value)
+  });
+};
 
   // Change handleSquareClick
 const handleSquareClick = async (row, col) => {
@@ -324,9 +337,10 @@ const handleScoreChange = async (quarter, team, value) => {
             <input
               type="number"
               value={pricePerSquare}
-              onChange={(e) => setPricePerSquare(Number(e.target.value))}
+              // onChange={(e) => setPricePerSquare(Number(e.target.value))}
+               onChange={(e) => handlePriceChange(e.target.value)}
               className="border p-2 rounded w-20"
-              min="0"
+              min="1"
               placeholder="Price"
             />
             <span className="text-sm text-gray-600 whitespace-nowrap">per square</span>
