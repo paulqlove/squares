@@ -394,7 +394,7 @@ const handleScoreChange = async (quarter, team, value) => {
 
         <div className="flex-1">
           <div className="mb-6">
-            <h3 className="text-lg font-bold mb-3">Player Statistics</h3>
+            <h3 className="text-lg font-bold mb-3">Players</h3>
             <div className="bg-white rounded-lg shadow p-4 mb-4">
               <div className="text-xl font-bold mb-2">
                 Total Pot: ${totalPot}
