@@ -370,8 +370,8 @@ const handleScoreChange = async (quarter, team, value) => {
                   return (
                     <div
                       key={`${rowIdx}-${colIdx}`}
-                      className={`w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 text-gray-900 flex items-center justify-center cursor-pointer text-[8px] sm:text-xs p-1 text-center
-                        ${playerColor || 'hover:bg-blue-50'}`}
+                      className={`w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 text-gray-900 flex items-center justify-center cursor-pointer text-[8px] sm:text-xs p-1 text-center 
+                        ${playerColor || 'hover:bg-blue-50'} truncate overflow-hidden whitespace-nowrap`}
                       onClick={() => handleSquareClick(rowIdx, colIdx)}
                     >
                       {selectedPlayer}
