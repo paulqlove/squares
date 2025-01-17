@@ -326,7 +326,7 @@ const handleScoreChange = async (quarter, team, value) => {
               value={pricePerSquare}
               onChange={(e) => setPricePerSquare(Number(e.target.value))}
               className="border p-2 rounded w-20"
-              min="1"
+              min="0"
               placeholder="Price"
             />
             <span className="text-sm text-gray-600 whitespace-nowrap">per square</span>
