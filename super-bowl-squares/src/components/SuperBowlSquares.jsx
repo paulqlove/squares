@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Shuffle, DollarSign, Share2 } from 'lucide-react';
 import { database } from '../firebase';
 import { ref, onValue, set, update } from 'firebase/database';
+import PropTypes from 'prop-types';
 
 const SuperBowlSquares = () => {
   const [homeTeam, setHomeTeam] = useState('Home Team');
@@ -26,29 +27,31 @@ const SuperBowlSquares = () => {
 
 // Firebase real-time sync
   useEffect(() => {
-    const gameRef = ref(database, `games/${gameId}`);
-    
-    const unsubscribe = onValue(gameRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setSelectedSquares(data.squares || {});
-        setHomeNumbers(data.homeNumbers || Array(10).fill(null));
-        setAwayNumbers(data.awayNumbers || Array(10).fill(null));
-        setIsRandomized(data.isRandomized || false);
-        setHomeTeam(data.homeTeam || 'Home Team');
-        setAwayTeam(data.awayTeam || 'Away Team');
-        setPricePerSquare(data.pricePerSquare || 5);
-        setScores(data.scores || {
-          q1: { home: '', away: '' },
-          q2: { home: '', away: '' },
-          q3: { home: '', away: '' },
-          q4: { home: '', away: '' }
-        });
-      }
-    });
+  const gameRef = ref(database, `games/${gameId}`);
 
-    return () => unsubscribe();
-  }, [gameId]);
+  const unsubscribe = onValue(gameRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      setSelectedSquares(data.squares || {});
+      setHomeNumbers(data.homeNumbers || Array(10).fill(null));
+      setAwayNumbers(data.awayNumbers || Array(10).fill(null));
+      setIsRandomized(data.isRandomized || false);
+      setHomeTeam(data.homeTeam || 'Home Team');
+      setAwayTeam(data.awayTeam || 'Away Team');
+      setPricePerSquare(data.pricePerSquare || 5);
+      setScores({
+        q1: { home: '', away: '' },
+        q2: { home: '', away: '' },
+        q3: { home: '', away: '' },
+        q4: { home: '', away: '' },
+        ...data.scores // Override default values with Firebase data
+      });
+    }
+  });
+
+  return () => unsubscribe();
+}, [gameId]);
+
 
 
   const payoutPercentages = {
@@ -108,6 +111,15 @@ const handleSquareClick = async (row, col) => {
 
 // Change handleScoreChange
 const handleScoreChange = async (quarter, team, value) => {
+    
+  setScores(prev => ({
+    ...prev,
+    [quarter]: {
+      ...prev[quarter],
+      [team]: value
+    }
+  }));
+
   await update(ref(database, `games/${gameId}/scores/${quarter}`), {
     [team]: value
   });
@@ -172,29 +184,30 @@ const handleScoreChange = async (quarter, team, value) => {
   return newGameId;
 };
 
-const ShareGame = () => (
-  <div className="mb-6 flex flex-col items-center gap-4">
-    <button
-      onClick={createNewGame}
-      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
-    >
-      <Share2 size={16} />
-      Create New Shareable Game
-    </button>
-    {gameId !== 'default-game' && (
-      <div className="w-full max-w-xl">
-        <p className="text-sm text-gray-600 mb-1">Share this link with others:</p>
-        <input
-          type="text"
-          readOnly
-          value={`${window.location.origin}/${gameId}`}
-          className="border p-2 rounded w-full bg-gray-50"
-          onClick={e => e.target.select()}
-        />
-      </div>
-    )}
-  </div>
-);
+
+// const ShareGame = () => (
+//   <div className="mb-6 flex flex-col items-center gap-4">
+//     <button
+//       onClick={createNewGame}
+//       className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
+//     >
+//       <Share2 size={16} />
+//       Create New Shareable Game
+//     </button>
+//     {gameId !== 'default-game' && (
+//       <div className="w-full max-w-xl">
+//         <p className="text-sm text-gray-600 mb-1">Share this link with others:</p>
+//         <input
+//           type="text"
+//           readOnly
+//           value={`${window.location.origin}/${gameId}`}
+//           className="border p-2 rounded w-full bg-gray-50"
+//           onClick={e => e.target.select()}
+//         />
+//       </div>
+//     )}
+//   </div>
+// );
 
   const winners = useMemo(() => {
     const getWinner = (homeScore, awayScore) => {
@@ -257,7 +270,7 @@ const ShareGame = () => (
       <input
         type="number"
         min="0"
-        max="99"
+        max="9"
         value={scores[quarter].home}
         onChange={(e) => handleScoreChange(quarter, 'home', e.target.value)}
         className="border p-1 w-16 text-center"
@@ -267,7 +280,7 @@ const ShareGame = () => (
       <input
         type="number"
         min="0"
-        max="99"
+        max="9"
         value={scores[quarter].away}
         onChange={(e) => handleScoreChange(quarter, 'away', e.target.value)}
         className="border p-1 w-16 text-center"
@@ -338,7 +351,7 @@ const ShareGame = () => (
             <div className="flex">
               <div className="w-8 h-8 sm:w-12 sm:h-12"></div>
               {homeNumbers.map((num, index) => (
-                <div key={`top-${index}`} className="w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 flex items-center justify-center bg-gray-100 text-sm sm:text-base">
+                <div key={`top-${index}`} className="w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 flex items-center justify-center bg-gray-100 text-gray-900 text-sm sm:text-base">
                   {num !== null ? num : ''}
                 </div>
               ))}
@@ -346,7 +359,7 @@ const ShareGame = () => (
             
             {Array(10).fill(null).map((_, rowIdx) => (
               <div key={`row-${rowIdx}`} className="flex">
-                <div className="w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 flex items-center justify-center bg-gray-100 text-sm sm:text-base">
+                <div className="w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 flex items-center justify-center bg-gray-100 text-gray-900 text-sm sm:text-base">
                   {awayNumbers[rowIdx] !== null ? awayNumbers[rowIdx] : ''}
                 </div>
                 
@@ -357,7 +370,7 @@ const ShareGame = () => (
                   return (
                     <div
                       key={`${rowIdx}-${colIdx}`}
-                      className={`w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 flex items-center justify-center cursor-pointer text-[8px] sm:text-xs p-1 text-center
+                      className={`w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 text-gray-900 flex items-center justify-center cursor-pointer text-[8px] sm:text-xs p-1 text-center
                         ${playerColor || 'hover:bg-blue-50'}`}
                       onClick={() => handleSquareClick(rowIdx, colIdx)}
                     >
@@ -390,11 +403,11 @@ const ShareGame = () => (
                 {Object.entries(playerStats).map(([player, stats]) => (
                   <div 
                     key={player}
-                    className={`p-2 rounded flex justify-between items-center ${playerColors[player] || 'bg-gray-100'}`}
+                    className={`p-2 rounded flex justify-between items-center ${playerColors[player] || 'bg-gray-100 text-gray-900'}`}
                   >
-                    <span className="font-medium">{player}</span>
+                    <span className="font-medium text-gray-900">{player}</span>
                     <div className="text-right">
-                      <div>{stats.squareCount} squares</div>
+                      <div className="text-gray-900 font-medium">{stats.squareCount} squares</div>
                       <div className="text-sm text-gray-600">${stats.totalSpent}</div>
                     </div>
                   </div>
@@ -425,7 +438,7 @@ const ShareGame = () => (
                        quarter === 'q3' ? '3rd Quarter' :
                        'Final Score'}:
                     </span>
-                    <span className={`px-2 py-1 rounded flex-1 ${winner ? playerColors[winner] || 'bg-gray-200' : 'bg-gray-200'}`}>
+                    <span className={`px-2 py-1 rounded flex-1 text-gray-900 ${winner ? playerColors[winner] || 'bg-gray-200' : 'bg-gray-200'}`}>
                       {winner || 'Pending'}
                     </span>
                     <span className="text-right min-w-[100px]">
